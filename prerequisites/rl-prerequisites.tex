@@ -1,0 +1,503 @@
+% =====================================================================
+%  RL in Production — Pre-Workshop Prerequisites
+%  Vizuara AI Labs · compile with XeLaTeX
+%    xelatex rl-prerequisites.tex  (run twice for ToC)
+% =====================================================================
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in,marginparwidth=0in]{geometry}
+\usepackage{fontspec}
+\usepackage{unicode-math}
+\usepackage{xcolor}
+\usepackage[most]{tcolorbox}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{parskip}
+\usepackage{microtype}
+\usepackage{amsmath}
+\usepackage{hyperref}
+
+% ---- Fonts (warm, course aesthetic) ----
+\setmainfont{Charter}
+\setsansfont{Avenir Next}
+\setmonofont{Menlo}[Scale=0.82]
+\setmathfont{texgyrepagella-math.otf}
+
+% ---- Palette (matches the lecture decks) ----
+\definecolor{paper}{HTML}{FCFAF4}      % warm cream page
+\definecolor{ink}{HTML}{1F1B16}
+\definecolor{ink2}{HTML}{4A4239}
+\definecolor{ink3}{HTML}{7C7165}
+\definecolor{rule}{HTML}{D8CFBE}
+\definecolor{accred}{HTML}{8B3A3A}     % action / emphasis
+\definecolor{forest}{HTML}{3D5A4A}     % value
+\definecolor{slate}{HTML}{4A5D7E}      % state / math
+\definecolor{ochre}{HTML}{8E6B2F}      % reward
+\definecolor{plum}{HTML}{6B4E7E}       % discount / time
+
+\pagecolor{paper}
+\color{ink}
+
+% ---- Semantic math colors ----
+\newcommand{\vval}[1]{\textcolor{forest}{#1}}
+\newcommand{\vrew}[1]{\textcolor{ochre}{#1}}
+\newcommand{\vsta}[1]{\textcolor{slate}{#1}}
+\newcommand{\vact}[1]{\textcolor{accred}{#1}}
+\newcommand{\vgam}[1]{\textcolor{plum}{#1}}
+
+% ---- Hyperref ----
+\hypersetup{colorlinks=true, linkcolor=slate, urlcolor=slate,
+  pdftitle={RL in Production — Prerequisites}, pdfauthor={Vizuara AI Labs}}
+
+% ---- Headings ----
+\titleformat{\section}{\sffamily\Large\bfseries\color{ink}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\sffamily\large\bfseries\color{ink2}}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titlespacing*{\subsection}{0pt}{1.1em}{0.4em}
+
+% ---- Header / footer ----
+\pagestyle{fancy}\fancyhf{}
+\renewcommand{\headrulewidth}{0.3pt}
+\fancyhead[L]{\sffamily\footnotesize\color{ink3} RL in Production · Prerequisites}
+\fancyhead[R]{\sffamily\footnotesize\color{ink3} Vizuara AI Labs}
+\fancyfoot[C]{\sffamily\footnotesize\color{ink3} \thepage}
+
+% ---- Boxes ----
+\newtcolorbox{intuition}{enhanced, breakable, colback=paper, colframe=slate,
+  boxrule=0pt, leftrule=2.5pt, arc=2pt, left=10pt, right=10pt, top=6pt, bottom=6pt,
+  fonttitle=\sffamily\bfseries\color{slate}, coltitle=slate, title={Intuition}}
+
+\newtcolorbox{example}{enhanced, breakable, colback=paper, colframe=forest,
+  boxrule=0pt, leftrule=2.5pt, arc=2pt, left=10pt, right=10pt, top=6pt, bottom=6pt,
+  fonttitle=\sffamily\bfseries\color{forest}, coltitle=forest, title={Worked example}}
+
+\newtcolorbox{why}{enhanced, breakable, colback={accred!6}, colframe=accred,
+  boxrule=0pt, leftrule=2.5pt, arc=2pt, left=10pt, right=10pt, top=6pt, bottom=6pt,
+  fonttitle=\sffamily\bfseries\color{accred}, coltitle=accred, title={Why it shows up in this course}}
+
+\newtcolorbox{exercise}{enhanced, breakable, colback={ochre!7}, colframe=ochre,
+  boxrule=0pt, leftrule=2.5pt, arc=2pt, left=10pt, right=10pt, top=6pt, bottom=6pt,
+  fonttitle=\sffamily\bfseries\color{ochre}, coltitle=ochre, title={Practice}}
+
+\newtcolorbox{solbox}{enhanced, breakable, colback=paper, colframe=rule,
+  boxrule=0.5pt, arc=2pt, left=10pt, right=10pt, top=5pt, bottom=5pt}
+
+% week tags
+\newcommand{\wk}[1]{{\sffamily\footnotesize\colorbox{slate!12}{\textcolor{slate}{\,Needed: #1\,}}}}
+
+\setlist{leftmargin=1.4em, itemsep=2pt, topsep=3pt}
+
+\begin{document}
+
+% ===================== TITLE =====================
+\begin{titlepage}
+\color{ink}
+\vspace*{2.5cm}
+\noindent{\sffamily\footnotesize\color{ink3}\MakeUppercase{Vizuara AI Labs \quad·\quad RL in Production \quad·\quad Cohort 2026}}\\[1.2cm]
+{\sffamily\bfseries\fontsize{34}{38}\selectfont Before You Arrive}\\[0.4cm]
+{\fontsize{18}{22}\selectfont\itshape The mathematics and programming you should\\ revise before Week 1 of the workshop.}\\[1.4cm]
+\textcolor{rule}{\rule{4cm}{1pt}}\\[1.0cm]
+\noindent\begin{minipage}{\textwidth}
+\large
+This is not new material. It is a checklist of things the course \emph{assumes} you already know, so we never spend lecture time re-teaching basics. Everything here maps to something concrete you will use — most of it in the very first week.\\[0.8cm]
+\itshape ``If you remember one thing from this whole course, remember the shape of this:''
+\end{minipage}\\[0.8cm]
+\begin{center}
+{\fontsize{22}{26}\selectfont $\vval{V(s)} \;=\; \vrew{r} \;+\; \vgam{\gamma}\,\vval{V(s')}$}
+\end{center}
+\vfill
+\noindent{\sffamily\footnotesize\color{ink3} Estimated time to work through: 4–6 hours. \quad Do Parts 1, 2, and 6 before Week 1.}
+\end{titlepage}
+
+% ===================== HOW TO USE =====================
+\section*{How to use this document}
+\addcontentsline{toc}{section}{How to use this document}
+
+Each topic follows the same rhythm: a plain-English \textbf{intuition}, the \textbf{equation} (annotated, with colours that we reuse in every lecture), a \textbf{worked example} tied to reinforcement learning, and a short \textbf{practice} problem with a full solution. Read actively — do the practice problems with a pen.
+
+We colour the recurring quantities the same way throughout the course, so the notation becomes muscle memory:
+
+\begin{center}
+\begin{tabular}{ll}
+\vval{value} (what we want to learn) & \vsta{state} (where the agent is) \\
+\vrew{reward} (feedback signal) & \vact{action} (what the agent does) \\
+\vgam{discount $\gamma$} (how much the future counts) & \\
+\end{tabular}
+\end{center}
+
+\subsection*{What to revise, and when you'll need it}
+You do \emph{not} need all of this for day one. Prioritise by the tags:
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}l l X@{}}
+\toprule
+\sffamily Part & \sffamily Needed by & \sffamily Why \\
+\midrule
+1 · Notation fluency        & \textbf{Week 1} & You must read $V(s)$, $\max_a$, $\sum$, $\mathbb{E}[\cdot]$ on sight. \\
+2 · Probability \& statistics & \textbf{Week 1} & The core. Value is an \emph{expectation}; GRPO uses \emph{z-scores}. \\
+3 · A little calculus       & Week 3 & Gradients arrive with policy gradients (REINFORCE/PPO). \\
+4 · A little linear algebra & Week 2 & To read a DQN / PPO network. \\
+5 · A little information theory & Week 3 & KL divergence is the ``leash'' in PPO / RLHF / GRPO. \\
+6 · Programming readiness    & \textbf{Week 1} (Python), Week 2 (PyTorch) & You code from day one. \\
+7 · Systems literacy         & Week 4 & GPUs, tokens, memory — for the inference half. \\
+8 · Warm-up: watch/read/play & Anytime & Build intuition before the math. \\
+9 · Self-diagnostic          & Before Week 1 & 15 questions. Find your gaps. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\tableofcontents
+\newpage
+
+% ===================== PART 1 : NOTATION =====================
+\section{Notation fluency}
+\wk{Week 1}
+
+\vspace{0.4em}
+Most people who ``find the math hard'' actually just find the \emph{notation} unfamiliar. The ideas are simple; the symbols are dense. This part is a decoder ring. If you can read every line below out loud in plain English, you are ready.
+
+\subsection{Function notation: V(s) and Q(s,a)}
+\begin{intuition}
+$V(s)$ is read ``\,$V$ of $s$\,'' — a function that takes a state $s$ and returns a number. Think of it as a lookup: give it where you are, it tells you how good that is. $Q(s,a)$ takes \emph{two} inputs — a state and an action — and returns how good it is to take action $a$ while in state $s$.
+\end{intuition}
+A superscript names \emph{which policy} we are measuring: $V^\pi(s)$ is the value of state $s$ \emph{if you act according to policy} $\pi$. A star means \emph{optimal}: $V^*(s)$ is the best achievable value. A prime means \emph{next}: $s'$ is ``the state you land in after this one.''
+
+\subsection{Summation (the sigma symbol)}
+\begin{intuition}
+$\sum$ (capital sigma) just means ``add these up.'' $\sum_{i=1}^{n} x_i = x_1 + x_2 + \dots + x_n$. The thing under the $\sum$ says where to start and what the index is; the thing on top says where to stop.
+\end{intuition}
+You will often see sums over states, $\sum_{s'} \dots$, which means ``add this up over every possible next state.''
+
+\subsection{Maximum and argmax}
+\begin{intuition}
+$\max_a f(a)$ is the \emph{largest value} $f$ takes as you try every action $a$. $\arg\max_a f(a)$ is the \emph{action that achieves} that largest value. One gives you the height of the peak; the other gives you where the peak is. In RL, $\max$ tells you how good the best move is; $\arg\max$ tells you which move to make.
+\end{intuition}
+
+\subsection{The expectation operator}
+This is the single most important symbol in the course; Part 2 teaches it properly. For now: $\mathbb{E}[X]$ means ``the average value of $X$ over all the randomness,'' and $\mathbb{E}[X \mid Y]$ means ``the average of $X$, given that we know $Y$.''
+
+\subsection{Reading a recursive equation}
+Putting it together — here is the equation from the title page, read symbol by symbol:
+\begin{center}
+$\vval{V(s)} \;=\; \vrew{r} \;+\; \vgam{\gamma}\,\vval{V(s')}$
+\end{center}
+``The \vval{value of where I am} equals the \vrew{reward I just received} plus \vgam{the discount} times the \vval{value of where I land next}.'' It is \emph{recursive}: $V$ appears on both sides. That is not circular — it is the definition that the whole course learns how to solve.
+
+\begin{why}
+This single line, rearranged, \emph{is} every algorithm in the course. DQN, PPO, RLHF, and GRPO are all different ways of computing the right-hand side when the state space is too big, the model is unknown, or the reward arrives late.
+\end{why}
+
+\begin{exercise}
+Read these aloud in plain English: \;(a) $\max_a Q^*(s,a)$ \quad (b) $\sum_{s'} P(s'\mid s,a)\,V(s')$ \quad (c) $\arg\max_a Q(s,a)$.
+\end{exercise}
+\begin{solbox}
+\textbf{Solution.} (a) ``the value of the best action available in state $s$, under the optimal policy.''\;
+(b) ``the average next-state value, weighting each possible next state $s'$ by how likely action $a$ is to take you there.''\;
+(c) ``the action that is best in state $s$'' — i.e.\ what to actually do.
+\end{solbox}
+
+% ===================== PART 2 : PROBABILITY =====================
+\section{Probability \& statistics}
+\wk{Week 1 — the core}
+
+\vspace{0.4em}
+If you revise only one part, revise this one. Reinforcement learning is built on the idea that the world is uncertain and that ``how good'' a situation is means ``how good \emph{on average}.''
+
+\subsection{Random variables and distributions}
+\begin{intuition}
+A \emph{random variable} is a quantity whose value depends on chance — the roll of a die, tomorrow's reward, the next state the environment puts you in. A \emph{probability distribution} lists each possible value and how likely it is. For a fair die: each of $\{1,2,3,4,5,6\}$ has probability $\tfrac{1}{6}$.
+\end{intuition}
+Probabilities are never negative and always sum to $1$: $\sum_x P(x) = 1$.
+
+\subsection{Expectation: the average outcome}
+\begin{intuition}
+The \emph{expectation} $\mathbb{E}[X]$ is the long-run average of a random variable, weighting each outcome by its probability. It is the centre of gravity of the distribution.
+\end{intuition}
+\[
+\mathbb{E}[X] \;=\; \sum_x x \cdot P(x).
+\]
+\begin{example}
+A fair die: $\mathbb{E}[X] = 1\cdot\tfrac16 + 2\cdot\tfrac16 + \dots + 6\cdot\tfrac16 = \tfrac{21}{6} = 3.5$. You never roll a $3.5$ — but it is the average over many rolls.
+
+Now the RL version. The \emph{return} $G_t$ is the total (discounted) reward from time $t$ onward — a random number, because the environment and the policy are stochastic. The value of a state is the \emph{expected} return:
+\[
+\vval{V^\pi(s)} \;=\; \mathbb{E}_\pi\!\left[\, G_t \;\middle|\; \vsta{s_t} = s \,\right].
+\]
+``Starting from state $s$ and following policy $\pi$, what total reward should I expect on average?'' The subscript $\pi$ on $\mathbb{E}$ says the randomness includes the policy's own choices.
+\end{example}
+
+\subsection{Conditional probability and the Markov property}
+\begin{intuition}
+$P(A \mid B)$ is ``the probability of $A$ \emph{given that} $B$ happened.'' Knowing $B$ can change the odds of $A$.
+\end{intuition}
+A process has the \emph{Markov property} when the next state depends only on the current state and action — not on the entire history:
+\[
+P(\vsta{s_{t+1}} \mid \vsta{s_t}, \vact{a_t}) \;=\; P(\vsta{s_{t+1}} \mid \vsta{s_t}, \vact{a_t}, \vsta{s_{t-1}}, \dots, \vsta{s_0}).
+\]
+\begin{why}
+The Markov property is the assumption that lets us write $V(s)$ as a function of $s$ \emph{alone}. If the future depended on the whole past, value could not be a simple lookup on the current state, and none of the recursion would work.
+\end{why}
+
+\subsection{Variance, standard deviation, and the z-score}
+\begin{intuition}
+The \emph{variance} measures how spread out a random variable is around its mean; the \emph{standard deviation} $\sigma$ is its square root (same units as the data). A \emph{z-score} re-expresses a value as ``how many standard deviations above or below the mean'' it is.
+\end{intuition}
+\[
+\operatorname{Var}[X] = \mathbb{E}\!\left[(X-\mu)^2\right], \qquad
+\sigma = \sqrt{\operatorname{Var}[X]}, \qquad
+z = \frac{x-\mu}{\sigma}.
+\]
+\begin{why}
+GRPO — the algorithm behind modern reasoning models, and a centrepiece of Week 3 — turns each sampled return into an \emph{advantage} using exactly the z-score:
+\[
+A_i \;=\; \frac{R_i - \operatorname{mean}(R)}{\operatorname{std}(R)}.
+\]
+A rollout that scored well \emph{relative to its group} gets a positive advantage and is reinforced. No separate value network needed — the group's own mean and standard deviation provide the baseline.
+\end{why}
+\begin{exercise}
+Four rollouts score $R = \{2, 8, 6, 4\}$. Compute the mean, the (population) standard deviation, and the z-score (advantage) of the rollout that scored $8$.
+\end{exercise}
+\begin{solbox}
+\textbf{Solution.} Mean $= (2+8+6+4)/4 = 5$. Squared deviations: $9, 9, 1, 1$; variance $= 20/4 = 5$; $\sigma=\sqrt5\approx 2.24$. Advantage of the $8$: $z = (8-5)/2.24 \approx \mathbf{+1.34}$. It scored well above its group, so it is reinforced.
+\end{solbox}
+
+\subsection{Sampling and Monte-Carlo estimation}
+\begin{intuition}
+When you cannot compute an expectation exactly (the formula is intractable, or you do not even know the distribution), you \emph{estimate} it: draw many samples and average them. By the law of large numbers, the sample average converges to the true expectation as you collect more samples.
+\end{intuition}
+\begin{why}
+This is the entire idea behind Monte-Carlo RL: the agent cannot compute $\mathbb{E}[G_t]$ directly, so it plays many episodes and averages the returns it actually observes. ``Monte Carlo'' just means ``estimate an expectation by sampling.''
+\end{why}
+
+\subsection{The running average — the shape of every RL update}
+\begin{intuition}
+You can update an average \emph{incrementally}, without storing all the data, by nudging the old estimate a small step toward each new observation:
+\end{intuition}
+\[
+\mu_{\text{new}} \;=\; \mu_{\text{old}} + \alpha\,(x - \mu_{\text{old}}).
+\]
+Here $\alpha$ is a small step size and $(x-\mu_{\text{old}})$ is the ``error'' — how far the new data point is from the current estimate.
+\begin{why}
+Look at the temporal-difference update that powers Q-learning, DQN, and the critic in actor-critic:
+\[
+\vval{V(s)} \;\leftarrow\; \vval{V(s)} + \alpha\big[\,\vrew{r} + \vgam{\gamma}\vval{V(s')} - \vval{V(s)}\,\big].
+\]
+It is \emph{exactly} a running average. The bracket is the error (the ``TD error''); the agent nudges its estimate a step $\alpha$ toward $\vrew{r}+\vgam{\gamma}\vval{V(s')}$. Recognising this shape means you already understand the core of modern RL.
+\end{why}
+
+\subsection{Geometric series — why discounting works}
+\begin{intuition}
+A geometric series adds up powers of a ratio: $1 + r + r^2 + r^3 + \dots$. When $|r| < 1$ the terms shrink fast enough that the infinite sum is \emph{finite}.
+\end{intuition}
+\[
+\sum_{k=0}^{\infty} r^k \;=\; \frac{1}{1-r}, \qquad \text{for } |r| < 1.
+\]
+\begin{why}
+The return discounts future reward by $\gamma$ per step: $G_t = \vrew{r_t} + \vgam{\gamma}\vrew{r_{t+1}} + \vgam{\gamma^2}\vrew{r_{t+2}} + \dots$. If every reward were $1$, the total would be $\sum_k \gamma^k = \tfrac{1}{1-\gamma}$ — a finite number because $\gamma<1$. That finiteness is exactly what makes value well-defined over an infinite horizon. With $\gamma = 0.99$, the effective horizon is about $\tfrac{1}{1-0.99}=100$ steps.
+\end{why}
+\begin{exercise}
+With $\gamma = 0.9$ and a reward of $+1$ at every step forever, what is the total discounted return? What if $\gamma = 0.5$?
+\end{exercise}
+\begin{solbox}
+\textbf{Solution.} $\sum_k 0.9^k = \tfrac{1}{1-0.9} = \mathbf{10}$. \quad $\sum_k 0.5^k = \tfrac{1}{1-0.5} = \mathbf{2}$. A more patient agent (higher $\gamma$) values the same reward stream much more.
+\end{solbox}
+
+% ===================== PART 3 : CALCULUS =====================
+\section{A little calculus}
+\wk{Week 3}
+
+\vspace{0.4em}
+You need surprisingly little calculus, and none of it for Week 1. The goal is to understand \emph{gradients} — the direction to nudge parameters to improve a model.
+
+\subsection{Derivative and gradient}
+\begin{intuition}
+A \emph{derivative} $\tfrac{df}{dx}$ is the slope of $f$ at a point: how fast $f$ changes as you nudge $x$. A \emph{gradient} $\nabla_\theta f$ is just the collection of partial derivatives when $f$ depends on many parameters $\theta$ — it points in the direction of steepest increase.
+\end{intuition}
+
+\subsection{Gradient ascent / descent}
+\begin{intuition}
+To \emph{maximise} a function, repeatedly step in the direction of its gradient (uphill): $\theta \leftarrow \theta + \alpha\,\nabla_\theta f$. To \emph{minimise} (e.g.\ a loss), step against it: $\theta \leftarrow \theta - \alpha\,\nabla_\theta L$. This hill-climbing is how every neural network in the course is trained.
+\end{intuition}
+
+\subsection{The chain rule (conceptually)}
+\begin{intuition}
+The chain rule says the derivative of nested functions multiplies: if $y = f(g(x))$, then $\tfrac{dy}{dx} = f'(g(x)) \cdot g'(x)$. You will never compute this by hand — \emph{backpropagation} is the chain rule applied automatically through a network — but you should know that is what PyTorch's \texttt{.backward()} is doing.
+\end{intuition}
+
+\subsection{The logarithm and its derivative}
+\begin{intuition}
+$\log(x)$ is the inverse of exponentiation, and it turns products into sums: $\log(ab) = \log a + \log b$. Its derivative is clean: $\tfrac{d}{dx}\log x = \tfrac1x$.
+\end{intuition}
+\begin{why}
+Policy-gradient methods (REINFORCE, PPO, RLHF) optimise the \emph{log-probability} of good actions, $\log \pi(a\mid s)$, because logs turn the product of probabilities along a trajectory into a sum — far easier to differentiate. When you see $\nabla_\theta \log \pi$ in Week 3, this is why.
+\end{why}
+
+% ===================== PART 4 : LINEAR ALGEBRA =====================
+\section{A little linear algebra}
+\wk{Week 2}
+
+\subsection{Vectors and the dot product}
+\begin{intuition}
+A \emph{vector} is an ordered list of numbers — e.g.\ a state encoded as $[0.2, -1.1, 3.0]$. The \emph{dot product} multiplies two vectors element-wise and sums the result: $\mathbf{a}\cdot\mathbf{b} = \sum_i a_i b_i$. It measures how aligned two vectors are, and it is the basic operation inside every neural-network layer.
+\end{intuition}
+
+\subsection{Matrix–vector multiplication = one network layer}
+\begin{intuition}
+A matrix is a grid of numbers; multiplying a matrix $W$ by a vector $\mathbf{x}$ produces a new vector whose entries are dot products of $\mathbf{x}$ with each row of $W$. That is \emph{exactly} what one layer of a neural network computes: $\mathbf{y} = W\mathbf{x} + \mathbf{b}$, followed by a nonlinearity.
+\end{intuition}
+\begin{why}
+When DQN replaces the value \emph{table} with a value \emph{network} (Week 2), $V(s)$ becomes a stack of these matrix multiplies. You do not need eigenvalues or matrix inverses for this course — just the picture of ``a layer is a matrix multiply plus a bias.''
+\end{why}
+
+% ===================== PART 5 : INFORMATION THEORY =====================
+\section{A little information theory}
+\wk{Week 3}
+
+\subsection{Log-probability and entropy}
+\begin{intuition}
+A rare event carries more ``information'' than a common one — $-\log P(x)$ is large when $P(x)$ is small. \emph{Entropy} is the average information of a distribution, $H = -\sum_x P(x)\log P(x)$; it is highest when outcomes are most uncertain (uniform) and zero when one outcome is certain. In RL, an \emph{entropy bonus} is sometimes added to keep a policy exploring rather than collapsing too early.
+\end{intuition}
+
+\subsection{KL divergence — the ``leash''}
+\begin{intuition}
+The \emph{Kullback–Leibler divergence} $D_{\mathrm{KL}}(\pi_1 \| \pi_2)$ measures how different two probability distributions are. It is $0$ when they are identical and grows as they diverge (it is not symmetric — order matters).
+\end{intuition}
+\[
+D_{\mathrm{KL}}(\pi_1 \,\|\, \pi_2) \;=\; \mathbb{E}_{\pi_1}\!\left[\log \pi_1(a\mid s) - \log \pi_2(a\mid s)\right].
+\]
+\begin{why}
+KL divergence is the safety leash in almost every modern policy method. TRPO constrains each update to a small KL ball; PPO approximates the same idea by clipping; RLHF and GRPO add a KL penalty against the original model ($\beta\, D_{\mathrm{KL}}(\pi \,\|\, \pi_{\text{ref}})$) so the fine-tuned policy does not drift into gibberish while chasing reward. Whenever you hear ``don't let the policy move too far,'' the mechanism is KL.
+\end{why}
+
+% ===================== PART 6 : PROGRAMMING =====================
+\section{Programming readiness}
+\wk{Python: Week 1 · PyTorch: Week 2}
+
+\vspace{0.4em}
+You will write code from the first session. None of it is exotic, but you should be fluent in the following without looking things up.
+
+\subsection{Python you must be fluent in}
+\begin{itemize}
+\item \textbf{Dictionaries as sparse tables.} The value function starts life as a dict: \texttt{V.get(s, 0.0)} returns the stored value or a default of $0$ for an unseen state. This is the data structure behind the tic-tac-toe agents.
+\item \textbf{Tuples} as immutable keys (a board state is a 9-tuple), \textbf{list comprehensions} (\texttt{[a for a in legal\_actions(s)]}), \textbf{type hints} (\texttt{Dict[State, float]}), and basic \textbf{classes}.
+\item \textbf{Control flow}: \texttt{while}/\texttt{for} loops, \texttt{if}/\texttt{break} for terminal conditions.
+\item \textbf{Seeded randomness}: \texttt{rng = random.Random(42)}, \texttt{rng.choice(options)} — for reproducible sampling.
+\end{itemize}
+
+\subsection{NumPy essentials}
+\begin{itemize}
+\item Creating arrays, element-wise arithmetic, and \emph{vectorised} operations (no Python loop).
+\item \texttt{arr.mean()}, \texttt{arr.std()}, \texttt{np.argmax(arr)} — the z-score / advantage computation is three NumPy calls.
+\end{itemize}
+
+\subsection{PyTorch essentials (for Week 2 onward)}
+\begin{intuition}
+You should recognise the four moving parts of a training step. In pseudocode:
+\end{intuition}
+\begin{solbox}
+\ttfamily\small
+pred = model(x)\qquad\textcolor{ink3}{\# forward pass}\\
+loss = loss\_fn(pred, target)\\
+optimizer.zero\_grad()\quad\textcolor{ink3}{\# clear old gradients}\\
+loss.backward()\qquad\quad\textcolor{ink3}{\# chain rule, automatically}\\
+optimizer.step()\qquad\quad\textcolor{ink3}{\# nudge parameters downhill}
+\end{solbox}
+Know what a \textbf{tensor} is (an array that tracks gradients), what \texttt{nn.Module} is (a container for layers), and what \texttt{autograd} does (computes gradients via the chain rule so you never differentiate by hand).
+
+\subsection{Environment setup — do this before Week 1}
+\begin{itemize}
+\item Create an isolated environment: \texttt{python -m venv .venv \&\& source .venv/bin/activate} (or conda).
+\item Install \texttt{numpy} and \texttt{torch}.
+\item Confirm GPU access if you have one: \texttt{python -c "import torch; print(torch.cuda.is\_available())"}. Don't worry if it prints \texttt{False} — the early weeks run fine on CPU.
+\end{itemize}
+
+% ===================== PART 7 : SYSTEMS =====================
+\section{Systems \& infrastructure literacy}
+\wk{Week 4 — the production half}
+
+\vspace{0.4em}
+Conceptual only — no setup required now. The second half of the course is about \emph{serving} RL systems, so a working mental model of the hardware helps.
+
+\begin{itemize}
+\item \textbf{GPU and VRAM.} A GPU does many multiply-adds in parallel; its memory (VRAM) holds the model weights and the intermediate activations. Model size in VRAM $\approx$ (number of parameters) $\times$ (bytes per parameter). A 4-billion-parameter model in 16-bit precision needs $\approx 8$~GB just for weights.
+\item \textbf{FLOPs and bandwidth.} ``How fast'' splits into compute (floating-point ops per second) and memory bandwidth (how fast you can move data). We will see that generating tokens one at a time is limited by \emph{bandwidth}, not compute — which shapes every optimisation.
+\item \textbf{Tokens and context windows.} Language models read and write \emph{tokens} (sub-word chunks). The \emph{context window} is how many tokens the model can attend to at once. Cost scales with tokens processed — a fact we will turn into a first-principles cost model.
+\end{itemize}
+
+% ===================== PART 8 : WARM-UP =====================
+\section{Warm-up: watch, read, play}
+\wk{Anytime}
+
+\vspace{0.4em}
+Build intuition \emph{before} the math hardens it. In rough order of effort:
+
+\begin{itemize}
+\item \textbf{Play (15 min, no math).} Open the tic-tac-toe visualiser shipped in this repo (\texttt{code/tic-tac-toe/visualizer/}). Watch Dynamic Programming, Monte Carlo, and Temporal Difference all learn the same game side by side, then play the trained agent. You will \emph{see} the ideas of Part 2 before you read the equations.
+\item \textbf{Watch.} David Silver's \emph{RL Course}, Lecture 1 (DeepMind, on YouTube) — the cleanest spoken introduction to MDPs and value. Karpathy's blog post \emph{``Deep Reinforcement Learning: Pong from Pixels''} for the policy-gradient intuition.
+\item \textbf{Read.} Sutton \& Barto, \emph{Reinforcement Learning: An Introduction} (free PDF), Chapters 3 (MDPs), 4 (Dynamic Programming), 5 (Monte Carlo), 6 (Temporal-Difference). These four chapters \emph{are} Lecture 1. The curated paper list lives in \texttt{resources/papers.md}.
+\end{itemize}
+
+% ===================== PART 9 : DIAGNOSTIC =====================
+\newpage
+\section{``Are you ready?'' — self-diagnostic}
+\wk{Before Week 1}
+
+\vspace{0.4em}
+Fifteen questions. Work them with a pen, then check the answer key. There is no grade — this is a map of your own gaps. Scoring guidance follows the key.
+
+\subsection*{Questions}
+\begin{enumerate}[label=\textbf{Q\arabic*.}]
+\item \textit{(Notation)} In plain English, what does $\arg\max_a Q(s,a)$ give you, and how does it differ from $\max_a Q(s,a)$?
+\item \textit{(Notation)} Read aloud: $\sum_{s'} P(s'\mid s,a)\,V(s')$.
+\item \textit{(Notation)} What is the difference between $V^\pi(s)$ and $V^*(s)$?
+\item \textit{(Probability)} A fair four-sided die shows $\{1,2,3,4\}$. What is $\mathbb{E}[X]$?
+\item \textit{(Probability)} In one sentence, state the Markov property and why it matters for defining $V(s)$.
+\item \textit{(Probability)} Rewards are $\{10, 0, 5, 5\}$. Give the mean, population standard deviation, and the z-score of the $10$.
+\item \textit{(Probability)} With $\gamma=0.95$ and reward $+1$ at every step forever, what is the total discounted return?
+\item \textit{(Probability)} Why does the temporal-difference update $V(s) \leftarrow V(s) + \alpha[r+\gamma V(s') - V(s)]$ have the shape of a running average?
+\item \textit{(Calculus)} What does the gradient $\nabla_\theta L$ point toward, and which way do you step to \emph{minimise} $L$?
+\item \textit{(Calculus)} Why do policy-gradient methods work with $\log \pi(a\mid s)$ rather than $\pi(a\mid s)$ directly?
+\item \textit{(Linear algebra)} Write the operation one neural-network layer performs on an input vector $\mathbf{x}$.
+\item \textit{(Information theory)} What does $D_{\mathrm{KL}}(\pi_1\|\pi_2)=0$ tell you about the two policies?
+\item \textit{(Information theory)} In one phrase, what job does the KL term do in PPO / RLHF / GRPO?
+\item \textit{(Programming)} What does \texttt{V.get(s, 0.0)} return, and why is the default useful in a value table?
+\item \textit{(Programming)} Name the four lines of a PyTorch training step, in order.
+\end{enumerate}
+
+\subsection*{Answer key}
+\begin{enumerate}[label=\textbf{A\arabic*.}]
+\item $\arg\max$ returns the \emph{action} that is best; $\max$ returns the best \emph{value}. One is ``which move,'' the other is ``how good.''
+\item ``The average next-state value, weighting each possible next state $s'$ by the probability that action $a$ leads there.''
+\item $V^\pi$ is the value if you follow a \emph{specific} policy $\pi$; $V^*$ is the value under the \emph{best possible} policy.
+\item $\mathbb{E}[X] = (1+2+3+4)/4 = 2.5$.
+\item The next state depends only on the current state and action, not the full history — so value can be a function of the current state alone.
+\item Mean $=5$; deviations $\{5,-5,0,0\}$, variance $=50/4=12.5$, $\sigma\approx3.54$; z-score of the $10$ is $(10-5)/3.54 \approx +1.41$.
+\item $\sum_k 0.95^k = 1/(1-0.95) = 20$.
+\item The bracket is an error term $(x - \text{old})$ with $x = r+\gamma V(s')$, and the update nudges the estimate a step $\alpha$ toward it — the incremental-average form $\mu \leftarrow \mu + \alpha(x-\mu)$.
+\item It points in the direction of steepest \emph{increase} of $L$; to minimise, step in the \emph{opposite} direction, $\theta \leftarrow \theta - \alpha\nabla_\theta L$.
+\item Logs turn the product of per-step probabilities along a trajectory into a sum, which is far easier to differentiate; and the gradient of $\log\pi$ has a clean, low-variance form.
+\item $\mathbf{y} = W\mathbf{x} + \mathbf{b}$, followed by a nonlinearity — a matrix multiply plus a bias.
+\item The two policies are identical (KL is zero only when the distributions match exactly).
+\item It is the ``leash'' that keeps the updated policy from drifting too far from the reference/previous policy.
+\item It returns the stored value for state $s$, or $0.0$ if $s$ has never been seen — so you can treat unvisited states as value-$0$ without pre-filling the table.
+\item \texttt{pred = model(x)}; \texttt{loss = loss\_fn(pred, target)}; \texttt{optimizer.zero\_grad()}; \texttt{loss.backward()}; \texttt{optimizer.step()}. (Four-to-five lines; the key ones are forward, zero\_grad, backward, step.)
+\end{enumerate}
+
+\subsection*{How to read your score}
+\begin{itemize}
+\item \textbf{Missed several in Q4–Q8 (probability)?} This is the one that matters most for Week 1. Re-read Part 2 carefully and redo the practice problems — value functions, GRPO advantages, and discounting all live here.
+\item \textbf{Missed Q1–Q3 (notation)?} Spend an hour with Part 1 until the symbols read as plainly as English. Everything downstream depends on it.
+\item \textbf{Missed Q9–Q13 (calculus / linear algebra / information theory)?} No emergency — these arrive in Weeks 2–3. Skim now, revisit before those weeks.
+\item \textbf{Missed Q14–Q15 (programming)?} Work through the tic-tac-toe code in \texttt{code/tic-tac-toe/} and a short PyTorch ``train a tiny net'' tutorial before the first session.
+\end{itemize}
+
+\vspace{1.2em}
+\begin{center}
+\textcolor{rule}{\rule{4cm}{1pt}}\\[0.6em]
+{\sffamily\footnotesize\color{ink3} See you in Week 1. Questions before then: hello@vizuara.com}
+\end{center}
+
+\end{document}

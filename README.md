@@ -10,12 +10,14 @@ Course site: <https://rl-production.vizuara.ai>
 
 | Path | Contents |
 |---|---|
+| [`prerequisites/`](./prerequisites/) | **Start here.** A self-paced primer (PDF) of the math + programming the course assumes. Read before Week 1. |
 | [`lectures/`](./lectures/) | One folder per lecture. Each contains a syllabus outline, reading list, and links to the slide deck. |
 | [`code/`](./code/) | Hands-on, runnable implementations of every algorithm we cover. Pedagogical first — short, commented, single-file where possible. |
 | [`resources/`](./resources/) | Curated reading lists, paper PDFs, and links to external talks. |
 
 ## How to use this repo as a student
 
+0. **Before the course starts:** work through [`prerequisites/rl-prerequisites.pdf`](./prerequisites/) — especially Parts 1, 2, and 6 — and take the self-diagnostic at the end.
 1. Read the lecture outline in `lectures/<n>-<title>/README.md` *before* attending.
 2. Run the corresponding code in `code/<topic>/` *during or after* the lecture.
 3. Work through the suggested papers from `resources/`.

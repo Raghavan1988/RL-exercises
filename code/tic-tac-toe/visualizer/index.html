@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RL on Tic-Tac-Toe · DP · MC · TD · Live Visualizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   Theme — warm cream paper, restrained earth-tone palette.
+   Matches the Vizuara course slide aesthetic.
+   ============================================================ */
+
+:root {
+  --paper:     #F7F2E8;
+  --paper-2:   #F1EBDE;
+  --panel:     #FDFAF3;
+  --ink:       #1F1B16;
+  --ink-2:     #4A4239;
+  --ink-3:     #7C7165;
+  --rule:      #D8CFBE;
+  --rule-soft: #E8E0CE;
+
+  --accent-1:  #8B3A3A; /* red    — emphasis / cost */
+  --accent-2:  #3D5A4A; /* forest — value, good thing */
+  --accent-3:  #4A5D7E; /* slate  — state / math */
+  --accent-4:  #8E6B2F; /* ochre  — reward */
+  --accent-5:  #6B4E7E; /* plum   — discount / time */
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-feature-settings: 'ss01', 'cv11';
+  line-height: 1.5;
+}
+
+body { padding: 2.5rem 3rem 4rem; max-width: 1480px; margin: 0 auto; }
+
+h1, h2, h3, h4 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0 0 0.4rem 0;
+  color: var(--ink);
+}
+h1 { font-size: 2.4rem; }
+h2 { font-size: 1.6rem; }
+h3 { font-size: 1.15rem; color: var(--ink-2); font-weight: 600; }
+h4 { font-size: 0.95rem; color: var(--ink-2); font-weight: 600; font-family: 'Inter', sans-serif; margin: 0 0 0.2rem 0; }
+
+p, li { font-size: 0.98rem; color: var(--ink); }
+
+.eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+.lede {
+  font-family: 'Fraunces', serif;
+  font-weight: 300;
+  font-size: 1.15rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+  max-width: 56rem;
+  margin: 0.4rem 0 1.5rem;
+}
+
+hr.rule-short { border: none; border-top: 1.5px solid var(--ink); width: 3rem; margin: 1rem 0; }
+hr.rule       { border: none; border-top: 1px solid var(--rule); margin: 1.5rem 0; }
+
+/* ============================================================
+   Controls bar
+   ============================================================ */
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 0.85rem 1.25rem;
+  margin: 1.5rem 0 1.75rem;
+}
+
+.controls button, .controls select {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 0.45rem 0.95rem;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.controls button:hover { background: var(--paper-2); border-color: var(--ink-3); }
+.controls button:disabled { opacity: 0.4; cursor: not-allowed; }
+.controls button.primary { background: var(--accent-2); color: var(--paper); border-color: var(--accent-2); }
+.controls button.primary:hover { background: var(--ink); }
+.controls .speed { display: flex; align-items: center; gap: 0.6rem; }
+.controls input[type="range"] { width: 160px; }
+.controls .pill {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--ink-3);
+  padding: 0.2rem 0.55rem;
+  background: var(--paper-2);
+  border-radius: 4px;
+  border: 1px solid var(--rule);
+}
+
+/* ============================================================
+   Three-column grid: DP · MC · TD
+   ============================================================ */
+
+.cols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.col {
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 1.25rem 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 580px;
+}
+
+.col-dp { border-top: 3px solid var(--accent-2); }
+.col-mc { border-top: 3px solid var(--accent-3); }
+.col-td { border-top: 3px solid var(--accent-1); }
+
+.col-title { margin-bottom: 0.2rem; }
+.col-desc {
+  font-size: 0.85rem;
+  color: var(--ink-3);
+  margin: 0 0 0.85rem 0;
+  line-height: 1.45;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem 0.85rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  background: var(--paper-2);
+  border: 1px solid var(--rule-soft);
+  border-radius: 5px;
+  padding: 0.55rem 0.75rem;
+  margin-bottom: 0.85rem;
+}
+.stat-label { color: var(--ink-3); }
+.stat-value { color: var(--ink); font-weight: 500; text-align: right; }
+
+.chart {
+  width: 100%;
+  height: 100px;
+  border: 1px solid var(--rule-soft);
+  border-radius: 4px;
+  background: var(--paper);
+  display: block;
+  margin-bottom: 0.85rem;
+}
+
+/* mini tic-tac-toe boards for diagnostic V display */
+.diag-boards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-bottom: 0.85rem;
+}
+
+.diag-board {
+  background: var(--paper);
+  border: 1px solid var(--rule-soft);
+  border-radius: 5px;
+  padding: 0.55rem 0.65rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.diag-board .label {
+  font-size: 0.66rem;
+  color: var(--ink-3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+}
+
+.diag-board .ttt {
+  display: inline-grid;
+  grid-template-columns: repeat(3, 1.5rem);
+  grid-template-rows: repeat(3, 1.5rem);
+  gap: 1px;
+  background: var(--ink-2);
+  padding: 1px;
+  border-radius: 3px;
+  font-family: 'Fraunces', serif;
+  font-size: 1rem;
+  font-weight: 500;
+  vertical-align: middle;
+}
+.diag-board .ttt > div {
+  background: var(--panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-2);
+}
+.diag-board .ttt .x { color: var(--accent-1); }
+.diag-board .ttt .o { color: var(--accent-3); }
+.diag-board .v {
+  display: inline-block;
+  margin-left: 0.55rem;
+  font-size: 0.92rem;
+  color: var(--ink);
+  vertical-align: middle;
+}
+.diag-board .v.pos { color: var(--accent-2); font-weight: 500; }
+.diag-board .v.neg { color: var(--accent-1); font-weight: 500; }
+
+.live-board-section {
+  margin-bottom: 0.85rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--ink-3);
+}
+.live-board-section .label {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.35rem;
+}
+.live-board-section .ttt {
+  display: inline-grid;
+  grid-template-columns: repeat(3, 2rem);
+  grid-template-rows: repeat(3, 2rem);
+  gap: 1px;
+  background: var(--ink-2);
+  padding: 1px;
+  border-radius: 3px;
+  font-family: 'Fraunces', serif;
+  font-size: 1.3rem;
+  font-weight: 500;
+}
+.live-board-section .ttt > div {
+  background: var(--panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-2);
+}
+.live-board-section .ttt .x { color: var(--accent-1); }
+.live-board-section .ttt .o { color: var(--accent-3); }
+.live-board-section .ttt .new { background: rgba(141, 107, 47, 0.18); }
+
+.log {
+  background: var(--paper-2);
+  border: 1px solid var(--rule-soft);
+  border-radius: 4px;
+  padding: 0.55rem 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.74rem;
+  color: var(--ink-2);
+  height: 5.5rem;
+  overflow: hidden;
+  line-height: 1.5;
+}
+.log .line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.log .line.fresh { color: var(--ink); }
+
+/* ============================================================
+   Play-against-agent section
+   ============================================================ */
+
+.play-section {
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 1.5rem 1.75rem;
+  margin-top: 1rem;
+}
+
+.play-section h2 { margin-bottom: 0.2rem; }
+.play-section .lede { margin: 0.2rem 0 1.25rem; font-size: 1rem; }
+
+.play-layout {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.play-board {
+  display: grid;
+  grid-template-columns: repeat(3, 3.6rem);
+  grid-template-rows: repeat(3, 3.6rem);
+  gap: 2px;
+  background: var(--ink-2);
+  padding: 2px;
+  border-radius: 6px;
+  font-family: 'Fraunces', serif;
+  font-size: 2.4rem;
+  font-weight: 500;
+}
+.play-board > div {
+  background: var(--panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-2);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.1s ease;
+}
+.play-board > div.empty:hover { background: rgba(141, 107, 47, 0.15); }
+.play-board > div.x { color: var(--accent-1); cursor: default; }
+.play-board > div.o { color: var(--accent-3); cursor: default; }
+.play-board > div.locked { cursor: default; }
+
+.play-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.play-info .field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.play-info select {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.88rem;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  padding: 0.45rem 0.7rem;
+  width: 18rem;
+}
+.play-info .status {
+  font-family: 'Fraunces', serif;
+  font-size: 1.05rem;
+  font-style: italic;
+  color: var(--ink-2);
+  min-height: 1.6rem;
+}
+.play-info .qvals {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  color: var(--ink-3);
+  background: var(--paper-2);
+  border: 1px solid var(--rule-soft);
+  border-radius: 4px;
+  padding: 0.6rem 0.8rem;
+  line-height: 1.6;
+  min-height: 4rem;
+}
+.play-info .qvals .move {
+  display: inline-block;
+  width: 6.5rem;
+}
+.play-info .qvals .q { color: var(--ink-2); }
+.play-info .qvals .best { color: var(--accent-2); font-weight: 500; }
+
+.play-info button {
+  align-self: flex-start;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  background: var(--accent-2);
+  color: var(--paper);
+  border: 1px solid var(--accent-2);
+  border-radius: 6px;
+  padding: 0.5rem 1.2rem;
+  cursor: pointer;
+}
+.play-info button:hover { background: var(--ink); }
+.play-info button.secondary {
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--rule);
+}
+.play-info button.secondary:hover { background: var(--paper-2); border-color: var(--ink-3); }
+
+/* ============================================================
+   Notes section
+   ============================================================ */
+
+.notes {
+  margin-top: 2rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+.note {
+  background: var(--paper-2);
+  border: 1px solid var(--rule-soft);
+  border-left: 3px solid var(--rule);
+  border-radius: 0 6px 6px 0;
+  padding: 1rem 1.2rem;
+}
+.note.dp { border-left-color: var(--accent-2); }
+.note.mc { border-left-color: var(--accent-3); }
+.note.td { border-left-color: var(--accent-1); }
+.note h4 { color: var(--ink); margin-bottom: 0.5rem; }
+.note p { font-size: 0.88rem; color: var(--ink-2); margin: 0.35rem 0; }
+.note code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  background: var(--panel);
+  border: 1px solid var(--rule-soft);
+  padding: 0.05em 0.35em;
+  border-radius: 3px;
+  color: var(--accent-1);
+}
+
+footer {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+  font-size: 0.85rem;
+  color: var(--ink-3);
+  text-align: center;
+}
+footer a { color: var(--accent-3); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+
+@media (max-width: 1100px) {
+  .cols { grid-template-columns: 1fr; }
+  .notes { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">RL in Production · Vizuara AI Labs · Lecture 01 companion</div>
+  <h1>Tic-Tac-Toe — DP · MC · TD</h1>
+  <p class="lede">
+    Three reinforcement-learning algorithms learn the same value function for the same game.
+    They differ only in <em>what data they use</em> and <em>when they update</em>.
+    Press play and watch all three converge — then play against the winner.
+  </p>
+  <hr class="rule-short">
+</header>
+
+<div class="controls">
+  <button id="play" class="primary">▶ &nbsp; Play</button>
+  <button id="pause" disabled>⏸ &nbsp; Pause</button>
+  <button id="reset">⟳ &nbsp; Reset</button>
+  <div class="speed">
+    <input type="range" id="speed" min="1" max="500" value="50" />
+    <span class="pill" id="speed-label">50 steps/tick</span>
+  </div>
+  <div class="speed">
+    <span class="pill" id="overall-status">paused</span>
+  </div>
+</div>
+
+<div class="cols">
+
+  <!-- ============ DP COLUMN ============ -->
+  <section class="col col-dp">
+    <h2 class="col-title">Dynamic Programming</h2>
+    <p class="col-desc">
+      Sweeps every reachable state. Uses the (assumed-known) opponent model.
+      <strong>No games played.</strong>
+    </p>
+
+    <div class="stats">
+      <div class="stat-label">Sweeps</div>          <div class="stat-value" id="dp-sweeps">0</div>
+      <div class="stat-label">States updated</div>  <div class="stat-value" id="dp-states">0</div>
+      <div class="stat-label">Max change</div>      <div class="stat-value" id="dp-change">—</div>
+      <div class="stat-label">V(empty)</div>        <div class="stat-value" id="dp-vempty">0.000</div>
+      <div class="stat-label">Status</div>          <div class="stat-value" id="dp-status">idle</div>
+    </div>
+
+    <canvas class="chart" id="dp-chart" width="640" height="200"></canvas>
+
+    <div class="diag-boards" id="dp-diag"></div>
+
+    <div class="log" id="dp-log"></div>
+  </section>
+
+  <!-- ============ MC COLUMN ============ -->
+  <section class="col col-mc">
+    <h2 class="col-title">Monte Carlo</h2>
+    <p class="col-desc">
+      Plays whole self-play episodes. Updates each visited state with the actual return at episode end.
+      <strong>No model.</strong>
+    </p>
+
+    <div class="stats">
+      <div class="stat-label">Episodes</div>        <div class="stat-value" id="mc-episodes">0</div>
+      <div class="stat-label">States seen</div>     <div class="stat-value" id="mc-states">0</div>
+      <div class="stat-label">Wins / draws / losses</div> <div class="stat-value" id="mc-wdl">0 / 0 / 0</div>
+      <div class="stat-label">V(empty)</div>        <div class="stat-value" id="mc-vempty">0.000</div>
+      <div class="stat-label">Status</div>          <div class="stat-value" id="mc-status">idle</div>
+    </div>
+
+    <canvas class="chart" id="mc-chart" width="640" height="200"></canvas>
+
+    <div class="live-board-section">
+      <div class="label">Current episode</div>
+      <div class="ttt" id="mc-board"></div>
+    </div>
+
+    <div class="log" id="mc-log"></div>
+  </section>
+
+  <!-- ============ TD COLUMN ============ -->
+  <section class="col col-td">
+    <h2 class="col-title">Temporal Difference (TD&thinsp;0)</h2>
+    <p class="col-desc">
+      Self-play with one update <em>per move</em>. Bootstraps V(s) toward r + γ·V(s′).
+      <strong>No model. No episode wait.</strong>
+    </p>
+
+    <div class="stats">
+      <div class="stat-label">Episodes</div>        <div class="stat-value" id="td-episodes">0</div>
+      <div class="stat-label">Transitions</div>     <div class="stat-value" id="td-transitions">0</div>
+      <div class="stat-label">Mean |TD error|</div> <div class="stat-value" id="td-error">—</div>
+      <div class="stat-label">V(empty)</div>        <div class="stat-value" id="td-vempty">0.000</div>
+      <div class="stat-label">Status</div>          <div class="stat-value" id="td-status">idle</div>
+    </div>
+
+    <canvas class="chart" id="td-chart" width="640" height="200"></canvas>
+
+    <div class="live-board-section">
+      <div class="label">Current episode</div>
+      <div class="ttt" id="td-board"></div>
+    </div>
+
+    <div class="log" id="td-log"></div>
+  </section>
+
+</div>
+
+<!-- ============ NOTES ============ -->
+<div class="notes">
+  <div class="note dp">
+    <h4>What DP does</h4>
+    <p>Enumerates ~2,400 X-to-move states once. For each, applies the Bellman backup using a uniform-random opponent model. Converges in ~4 sweeps.</p>
+    <p><code>V(s) ← max_a Σ P(s′|s,a) [r + γ V(s′)]</code></p>
+  </div>
+  <div class="note mc">
+    <h4>What MC does</h4>
+    <p>Plays one full self-play episode at a time. Records visited states. At the end, every first-visit state gets <code>V(s) ← V(s) + (1/n) · [G − V(s)]</code>. Takes ~50k–100k episodes to settle.</p>
+  </div>
+  <div class="note td">
+    <h4>What TD does</h4>
+    <p>Same self-play loop, but updates fire <em>after every move</em>, not at episode end. Uses bootstrapping: <code>V(s) ← V(s) + α [r + γ V(s′) − V(s)]</code>. Same answer, ~10× fewer games.</p>
+  </div>
+</div>
+
+<!-- ============ PLAY SECTION ============ -->
+<section class="play-section">
+  <div class="eyebrow">Play against a trained agent</div>
+  <h2>You are X. The agent is O.</h2>
+  <p class="lede">
+    Pick which trained agent you'd like to face. The agent uses its learned V to choose moves —
+    you'll see its evaluation of each legal action next to the board.
+  </p>
+
+  <div class="play-layout">
+    <div class="play-board" id="play-board"></div>
+    <div class="play-info">
+      <div class="field">
+        <div class="eyebrow">Opponent</div>
+        <select id="opponent">
+          <option value="dp">DP — value iteration</option>
+          <option value="mc">MC — Monte Carlo</option>
+          <option value="td">TD — temporal difference</option>
+          <option value="random">Random (sanity baseline)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <div class="eyebrow">Status</div>
+        <div class="status" id="play-status">Press "New game" to start.</div>
+      </div>
+
+      <div class="field">
+        <div class="eyebrow">Agent's evaluation</div>
+        <div class="qvals" id="play-qvals">—</div>
+      </div>
+
+      <div style="display: flex; gap: 0.6rem;">
+        <button id="new-game">New game</button>
+        <button id="swap-side" class="secondary">Agent plays first</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Code &nbsp;·&nbsp;
+  <a href="https://github.com/VizuaraAI/RL-in-Production-Bootcamp-Resources/tree/main/code/tic-tac-toe">github · code/tic-tac-toe</a>
+  &nbsp;·&nbsp;
+  Lecture 1 of the Vizuara AI Labs "RL in Production" cohort.
+</footer>
+
+<!-- ============================================================
+     APPLICATION
+     ============================================================ -->
+<script>
+'use strict';
+
+/* ──────────────────────────────────────────────────────────────
+   1.  TIC-TAC-TOE ENVIRONMENT
+   ────────────────────────────────────────────────────────────── */
+
+const TTT = (() => {
+  const EMPTY = 0, X = 1, O = -1;
+  const LINES = [
+    [0,1,2],[3,4,5],[6,7,8],   // rows
+    [0,3,6],[1,4,7],[2,5,8],   // cols
+    [0,4,8],[2,4,6],           // diagonals
+  ];
+
+  // States are length-9 arrays. We key them with a compact string.
+  const key = s => s.map(v => v === 0 ? '.' : v === 1 ? 'X' : 'O').join('');
+
+  const legal = s => {
+    const out = [];
+    for (let i = 0; i < 9; i++) if (s[i] === EMPTY) out.push(i);
+    return out;
+  };
+
+  const step = (s, a, player) => {
+    const ns = s.slice();
+    ns[a] = player;
+    return ns;
+  };
+
+  const winner = s => {
+    for (const [a, b, c] of LINES) {
+      if (s[a] !== EMPTY && s[a] === s[b] && s[b] === s[c]) return s[a];
+    }
+    return null;
+  };
+
+  const isTerminal = s => {
+    if (winner(s) !== null) return true;
+    for (const v of s) if (v === EMPTY) return false;
+    return true;
+  };
+
+  const reward = (s, player = X) => {
+    const w = winner(s);
+    if (w === null) return 0;
+    if (w === player) return 1;
+    return -1;
+  };
+
+  const xToMove = s => {
+    let xs = 0, os = 0;
+    for (const v of s) { if (v === X) xs++; else if (v === O) os++; }
+    return xs === os;
+  };
+
+  // Enumerate all reachable states from the empty board.
+  const reachable = () => {
+    const seen = new Set();
+    const all = [];
+    const stack = [TTT.initial()];
+    while (stack.length) {
+      const s = stack.pop();
+      const k = key(s);
+      if (seen.has(k)) continue;
+      seen.add(k);
+      all.push(s);
+      if (isTerminal(s)) continue;
+      const turn = xToMove(s) ? X : O;
+      for (const a of legal(s)) stack.push(step(s, a, turn));
+    }
+    return all;
+  };
+
+  const initial = () => [0,0,0,0,0,0,0,0,0];
+
+  return { EMPTY, X, O, LINES, key, legal, step, winner, isTerminal, reward, xToMove, reachable, initial };
+})();
+
+
+/* ──────────────────────────────────────────────────────────────
+   2.  AGENTS — DP, MC, TD
+       Each agent exposes: stepOnce(), getV(s), and stats.
+   ────────────────────────────────────────────────────────────── */
+
+/* ──── 2a. Dynamic Programming (Value Iteration) ──────────── */
+
+class DPAgent {
+  constructor(gamma = 1.0, eps = 1e-4) {
+    this.gamma = gamma;
+    this.eps = eps;
+    this.V = new Map();              // key -> value (only X-to-move non-terminal states)
+    this.xStates = [];               // list of X-to-move non-terminal states
+    this.sweepCount = 0;
+    this.lastMaxChange = Infinity;
+    this.converged = false;
+    this.statesUpdatedTotal = 0;
+
+    // Set up: enumerate reachable states, keep X-to-move non-terminals.
+    const all = TTT.reachable();
+    for (const s of all) {
+      if (!TTT.isTerminal(s) && TTT.xToMove(s)) {
+        this.xStates.push(s);
+        this.V.set(TTT.key(s), 0);
+      }
+    }
+  }
+
+  // Q(s, a) under a uniform-random opponent model
+  Q(s, a) {
+    const sAfterX = TTT.step(s, a, TTT.X);
+    if (TTT.isTerminal(sAfterX)) return TTT.reward(sAfterX, TTT.X);
+    const oLegal = TTT.legal(sAfterX);
+    const p = 1 / oLegal.length;
+    let expected = 0;
+    for (const oa of oLegal) {
+      const sAfterO = TTT.step(sAfterX, oa, TTT.O);
+      const vNext = TTT.isTerminal(sAfterO)
+        ? TTT.reward(sAfterO, TTT.X)
+        : (this.V.get(TTT.key(sAfterO)) ?? 0);
+      expected += p * (0 + this.gamma * vNext);
+    }
+    return expected;
+  }
+
+  // One full sweep over every X-to-move state.
+  stepOnce() {
+    if (this.converged) return { changed: 0, sweepCount: this.sweepCount };
+    let maxChange = 0;
+    let updated = 0;
+    for (const s of this.xStates) {
+      const k = TTT.key(s);
+      const oldV = this.V.get(k);
+      let best = -Infinity;
+      for (const a of TTT.legal(s)) {
+        const q = this.Q(s, a);
+        if (q > best) best = q;
+      }
+      this.V.set(k, best);
+      const change = Math.abs(best - oldV);
+      if (change > 1e-8) updated++;
+      if (change > maxChange) maxChange = change;
+    }
+    this.sweepCount++;
+    this.lastMaxChange = maxChange;
+    this.statesUpdatedTotal += updated;
+    if (maxChange < this.eps) this.converged = true;
+    return { changed: updated, sweepCount: this.sweepCount, maxChange };
+  }
+
+  getV(s) {
+    const k = TTT.key(s);
+    if (this.V.has(k)) return this.V.get(k);
+    if (TTT.isTerminal(s)) return TTT.reward(s, TTT.X);
+    return 0;
+  }
+
+  greedyAction(s) {
+    let bestA = null, bestQ = -Infinity;
+    for (const a of TTT.legal(s)) {
+      const q = this.Q(s, a);
+      if (q > bestQ) { bestQ = q; bestA = a; }
+    }
+    return { action: bestA, q: bestQ };
+  }
+
+  actionScores(s) {
+    return TTT.legal(s).map(a => ({ action: a, q: this.Q(s, a) }));
+  }
+}
+
+/* ──── 2b. Monte Carlo (first-visit) ──────────────────────── */
+
+class MCAgent {
+  constructor(gamma = 1.0, eps = 0.15) {
+    this.gamma = gamma;
+    this.eps = eps;
+    this.V = new Map();           // key -> running mean
+    this.N = new Map();           // key -> count
+    this.episodes = 0;
+    this.wins = 0; this.draws = 0; this.losses = 0;
+    this.lastTrajectory = [];
+    this.lastReturn = 0;
+  }
+
+  getV(sOrKey) {
+    const k = typeof sOrKey === 'string' ? sOrKey : TTT.key(sOrKey);
+    if (this.V.has(k)) return this.V.get(k);
+    return 0;
+  }
+
+  greedyAction(s) {
+    let bestA = null, bestV = -Infinity;
+    for (const a of TTT.legal(s)) {
+      const sAfterX = TTT.step(s, a, TTT.X);
+      const v = TTT.isTerminal(sAfterX) ? TTT.reward(sAfterX, TTT.X) : this.getV(sAfterX);
+      if (v > bestV) { bestV = v; bestA = a; }
+    }
+    return { action: bestA, q: bestV };
+  }
+
+  actionScores(s) {
+    return TTT.legal(s).map(a => {
+      const sAfterX = TTT.step(s, a, TTT.X);
+      const v = TTT.isTerminal(sAfterX) ? TTT.reward(sAfterX, TTT.X) : this.getV(sAfterX);
+      return { action: a, q: v };
+    });
+  }
+
+  epsilonGreedy(s) {
+    if (Math.random() < this.eps) {
+      const legal = TTT.legal(s);
+      return legal[Math.floor(Math.random() * legal.length)];
+    }
+    return this.greedyAction(s).action;
+  }
+
+  // Play one episode. Returns its trajectory (X-to-move states) and final return.
+  stepOnce() {
+    let s = TTT.initial();
+    const trajectory = [];
+    while (true) {
+      // X moves
+      trajectory.push(s);
+      const a = this.epsilonGreedy(s);
+      s = TTT.step(s, a, TTT.X);
+      if (TTT.isTerminal(s)) break;
+      // O moves uniformly at random
+      const oa = TTT.legal(s)[Math.floor(Math.random() * TTT.legal(s).length)];
+      s = TTT.step(s, oa, TTT.O);
+      if (TTT.isTerminal(s)) break;
+    }
+    const G = TTT.reward(s, TTT.X);
+    if (G > 0) this.wins++; else if (G < 0) this.losses++; else this.draws++;
+
+    // First-visit MC update
+    const seen = new Set();
+    for (const visited of trajectory) {
+      const k = TTT.key(visited);
+      if (seen.has(k)) continue;
+      seen.add(k);
+      const n = (this.N.get(k) ?? 0) + 1;
+      this.N.set(k, n);
+      const vOld = this.V.get(k) ?? 0;
+      this.V.set(k, vOld + (G - vOld) / n);
+    }
+
+    this.episodes++;
+    this.lastTrajectory = trajectory.concat([s]);   // include terminal
+    this.lastReturn = G;
+    return { episode: this.episodes, G, trajectoryLen: trajectory.length };
+  }
+}
+
+/* ──── 2c. Temporal Difference TD(0) ──────────────────────── */
+
+class TDAgent {
+  constructor(gamma = 1.0, alpha = 0.1, eps = 0.15) {
+    this.gamma = gamma;
+    this.alpha = alpha;
+    this.eps = eps;
+    this.V = new Map();
+    this.episodes = 0;
+    this.transitions = 0;
+    this.tdErrorSum = 0;
+    this.tdErrorCount = 0;
+    this.lastTrajectory = [];
+    this.lastReturn = 0;
+  }
+
+  getV(sOrKey) {
+    const k = typeof sOrKey === 'string' ? sOrKey : TTT.key(sOrKey);
+    if (this.V.has(k)) return this.V.get(k);
+    return 0;
+  }
+
+  greedyAction(s) {
+    let bestA = null, bestV = -Infinity;
+    for (const a of TTT.legal(s)) {
+      const sAfterX = TTT.step(s, a, TTT.X);
+      const v = TTT.isTerminal(sAfterX) ? TTT.reward(sAfterX, TTT.X) : this.getV(sAfterX);
+      if (v > bestV) { bestV = v; bestA = a; }
+    }
+    return { action: bestA, q: bestV };
+  }
+
+  actionScores(s) {
+    return TTT.legal(s).map(a => {
+      const sAfterX = TTT.step(s, a, TTT.X);
+      const v = TTT.isTerminal(sAfterX) ? TTT.reward(sAfterX, TTT.X) : this.getV(sAfterX);
+      return { action: a, q: v };
+    });
+  }
+
+  epsilonGreedy(s) {
+    if (Math.random() < this.eps) {
+      const legal = TTT.legal(s);
+      return legal[Math.floor(Math.random() * legal.length)];
+    }
+    return this.greedyAction(s).action;
+  }
+
+  stepOnce() {
+    let s = TTT.initial();
+    const trajectory = [s];
+    while (true) {
+      const k = TTT.key(s);
+      const a = this.epsilonGreedy(s);
+      const sAfterX = TTT.step(s, a, TTT.X);
+      if (TTT.isTerminal(sAfterX)) {
+        // terminal transition
+        const r = TTT.reward(sAfterX, TTT.X);
+        const vS = this.V.get(k) ?? 0;
+        const td = r - vS;
+        this.V.set(k, vS + this.alpha * td);
+        this.tdErrorSum += Math.abs(td);
+        this.tdErrorCount++;
+        this.transitions++;
+        trajectory.push(sAfterX);
+        this.lastReturn = r;
+        break;
+      }
+      const oa = TTT.legal(sAfterX)[Math.floor(Math.random() * TTT.legal(sAfterX).length)];
+      const sNext = TTT.step(sAfterX, oa, TTT.O);
+      const terminal = TTT.isTerminal(sNext);
+      const r = terminal ? TTT.reward(sNext, TTT.X) : 0;
+      const vS = this.V.get(k) ?? 0;
+      const vNext = terminal ? r : (this.V.get(TTT.key(sNext)) ?? 0);
+      const td = r + this.gamma * vNext - vS;
+      this.V.set(k, vS + this.alpha * td);
+      this.tdErrorSum += Math.abs(td);
+      this.tdErrorCount++;
+      this.transitions++;
+      trajectory.push(sAfterX);
+      trajectory.push(sNext);
+      if (terminal) { this.lastReturn = r; break; }
+      s = sNext;
+    }
+    this.episodes++;
+    this.lastTrajectory = trajectory;
+    return { episode: this.episodes };
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   3.  UI — rendering, animation, controls
+   ────────────────────────────────────────────────────────────── */
+
+const UI = (() => {
+  /* ----- Tic-tac-toe rendering helpers ----- */
+
+  function renderBoard(s, parentEl, opts = {}) {
+    parentEl.innerHTML = '';
+    for (let i = 0; i < 9; i++) {
+      const d = document.createElement('div');
+      const v = s[i];
+      if (v === TTT.X) { d.textContent = 'X'; d.classList.add('x'); }
+      else if (v === TTT.O) { d.textContent = 'O'; d.classList.add('o'); }
+      else d.textContent = opts.dotEmpty ? '·' : '';
+      if (opts.newCellIdx === i) d.classList.add('new');
+      parentEl.appendChild(d);
+    }
+  }
+
+  function diagBoardHTML(state, label, v) {
+    let cells = '';
+    for (let i = 0; i < 9; i++) {
+      const cv = state[i];
+      if (cv === TTT.X) cells += '<div class="x">X</div>';
+      else if (cv === TTT.O) cells += '<div class="o">O</div>';
+      else cells += '<div>·</div>';
+    }
+    const vCls = v >= 0.05 ? 'pos' : v <= -0.05 ? 'neg' : '';
+    return `
+      <div class="diag-board">
+        <div class="label">${label}</div>
+        <div class="ttt">${cells}</div>
+        <span class="v ${vCls}">V = ${v.toFixed(3)}</span>
+      </div>
+    `;
+  }
+
+  /* ----- Convergence chart ----- */
+
+  class Chart {
+    constructor(canvas, color, label) {
+      this.canvas = canvas;
+      this.ctx = canvas.getContext('2d');
+      this.color = color;
+      this.label = label;
+      this.points = [];          // {x, y}
+      this.xMax = 1;
+      this.yMin = -1;
+      this.yMax = 1;
+      this.dpr = window.devicePixelRatio || 1;
+      this.resize();
+    }
+    resize() {
+      const r = this.canvas.getBoundingClientRect();
+      this.canvas.width = r.width * this.dpr;
+      this.canvas.height = r.height * this.dpr;
+    }
+    add(x, y) {
+      this.points.push({ x, y });
+      if (x > this.xMax) this.xMax = x;
+      if (y > this.yMax) this.yMax = y;
+      if (y < this.yMin) this.yMin = y;
+    }
+    clear() { this.points = []; this.xMax = 1; this.yMin = -1; this.yMax = 1; }
+    draw() {
+      const ctx = this.ctx;
+      const W = this.canvas.width, H = this.canvas.height;
+      ctx.clearRect(0, 0, W, H);
+
+      const padL = 36 * this.dpr, padR = 8 * this.dpr;
+      const padT = 10 * this.dpr, padB = 22 * this.dpr;
+      const cw = W - padL - padR, ch = H - padT - padB;
+
+      const yLow = Math.min(-0.05, this.yMin - 0.1);
+      const yHigh = Math.max(1.05, this.yMax + 0.1);
+      const xToPx = x => padL + (this.xMax === 0 ? 0 : (x / this.xMax) * cw);
+      const yToPx = y => padT + ch - ((y - yLow) / (yHigh - yLow)) * ch;
+
+      // axes
+      ctx.strokeStyle = '#D8CFBE';
+      ctx.lineWidth = 1 * this.dpr;
+      ctx.beginPath();
+      ctx.moveTo(padL, padT); ctx.lineTo(padL, padT + ch);
+      ctx.lineTo(padL + cw, padT + ch);
+      ctx.stroke();
+
+      // y=0 line
+      const yZero = yToPx(0);
+      ctx.setLineDash([2 * this.dpr, 3 * this.dpr]);
+      ctx.beginPath();
+      ctx.moveTo(padL, yZero); ctx.lineTo(padL + cw, yZero);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // y ticks at 0, 0.5, 1
+      ctx.fillStyle = '#7C7165';
+      ctx.font = `${10 * this.dpr}px 'JetBrains Mono', monospace`;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      for (const yv of [0, 0.5, 1]) {
+        if (yv > yHigh || yv < yLow) continue;
+        const py = yToPx(yv);
+        ctx.fillText(yv.toFixed(1), padL - 4 * this.dpr, py);
+      }
+
+      // x-axis label
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(this.label, padL + cw / 2, H - 2 * this.dpr);
+
+      // line
+      if (this.points.length < 2) return;
+      ctx.strokeStyle = this.color;
+      ctx.lineWidth = 1.5 * this.dpr;
+      ctx.beginPath();
+      for (let i = 0; i < this.points.length; i++) {
+        const p = this.points[i];
+        const x = xToPx(p.x);
+        const y = yToPx(p.y);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+  }
+
+  /* ----- Log helper ----- */
+
+  function logLine(parentEl, line) {
+    const div = document.createElement('div');
+    div.className = 'line fresh';
+    div.textContent = line;
+    parentEl.insertBefore(div, parentEl.firstChild);
+    // mark all but first as not-fresh
+    [...parentEl.children].forEach((c, i) => {
+      if (i > 0) c.classList.remove('fresh');
+    });
+    // cap at 5
+    while (parentEl.children.length > 5) parentEl.removeChild(parentEl.lastChild);
+  }
+
+  return { renderBoard, diagBoardHTML, Chart, logLine };
+})();
+
+
+/* ──────────────────────────────────────────────────────────────
+   4.  MAIN — wire everything together
+   ────────────────────────────────────────────────────────────── */
+
+(() => {
+  // Three diagnostic positions whose V values are easy to interpret.
+  // [state, label]
+  const DIAG_STATES = [
+    [[0,0,0,0,0,0,0,0,0], 'EMPTY (start)'],
+    [[1,1,0,0,-1,0,0,0,-1], 'X to win @ cell 2'],
+    [[1,-1,0,-1,1,0,0,0,0], 'X turn · center'],
+  ];
+
+  let dp = new DPAgent();
+  let mc = new MCAgent();
+  let td = new TDAgent();
+
+  const chartDP = new UI.Chart(document.getElementById('dp-chart'), '#3D5A4A', 'sweeps');
+  const chartMC = new UI.Chart(document.getElementById('mc-chart'), '#4A5D7E', 'episodes');
+  const chartTD = new UI.Chart(document.getElementById('td-chart'), '#8B3A3A', 'episodes');
+
+  let running = false;
+  let stepsPerTick = 50;
+  let tickHandle = null;
+
+  /* ---- per-agent update ---- */
+
+  function updateDP() {
+    document.getElementById('dp-sweeps').textContent = dp.sweepCount;
+    document.getElementById('dp-states').textContent = dp.statesUpdatedTotal;
+    document.getElementById('dp-change').textContent = dp.sweepCount === 0 ? '—' : dp.lastMaxChange.toExponential(2);
+    const vE = dp.getV(TTT.initial());
+    document.getElementById('dp-vempty').textContent = vE.toFixed(4);
+    document.getElementById('dp-status').textContent = dp.converged ? 'converged ✓' : 'running';
+    chartDP.add(dp.sweepCount, vE);
+    chartDP.draw();
+    // diagnostic boards
+    const diag = DIAG_STATES.map(([s, lbl]) => UI.diagBoardHTML(s, lbl, dp.getV(s))).join('');
+    document.getElementById('dp-diag').innerHTML = diag;
+  }
+
+  function updateMC() {
+    document.getElementById('mc-episodes').textContent = mc.episodes.toLocaleString();
+    document.getElementById('mc-states').textContent = mc.N.size.toLocaleString();
+    document.getElementById('mc-wdl').textContent = `${mc.wins} / ${mc.draws} / ${mc.losses}`;
+    const vE = mc.getV(TTT.initial());
+    document.getElementById('mc-vempty').textContent = vE.toFixed(4);
+    document.getElementById('mc-status').textContent = mc.episodes === 0 ? 'idle' : 'playing';
+    chartMC.add(mc.episodes, vE);
+    chartMC.draw();
+    // show last episode's final state
+    const board = document.getElementById('mc-board');
+    const last = mc.lastTrajectory.length ? mc.lastTrajectory[mc.lastTrajectory.length - 1] : TTT.initial();
+    UI.renderBoard(last, board, { dotEmpty: true });
+  }
+
+  function updateTD() {
+    document.getElementById('td-episodes').textContent = td.episodes.toLocaleString();
+    document.getElementById('td-transitions').textContent = td.transitions.toLocaleString();
+    const meanErr = td.tdErrorCount === 0 ? 0 : td.tdErrorSum / td.tdErrorCount;
+    document.getElementById('td-error').textContent = td.tdErrorCount === 0 ? '—' : meanErr.toFixed(4);
+    const vE = td.getV(TTT.initial());
+    document.getElementById('td-vempty').textContent = vE.toFixed(4);
+    document.getElementById('td-status').textContent = td.episodes === 0 ? 'idle' : 'playing';
+    chartTD.add(td.episodes, vE);
+    chartTD.draw();
+    const board = document.getElementById('td-board');
+    const last = td.lastTrajectory.length ? td.lastTrajectory[td.lastTrajectory.length - 1] : TTT.initial();
+    UI.renderBoard(last, board, { dotEmpty: true });
+  }
+
+  /* ---- main loop ---- */
+
+  function tick() {
+    // DP: sweeps are heavy; do at most 1 per UI tick regardless of stepsPerTick
+    if (!dp.converged) {
+      const r = dp.stepOnce();
+      UI.logLine(document.getElementById('dp-log'),
+        `sweep ${r.sweepCount}  ·  Δmax = ${r.maxChange.toExponential(2)}  ·  V(empty) = ${dp.getV(TTT.initial()).toFixed(4)}`);
+    }
+
+    // MC: stepsPerTick episodes per tick
+    let mcLastG = null;
+    for (let i = 0; i < stepsPerTick; i++) {
+      const r = mc.stepOnce();
+      mcLastG = r.G;
+    }
+    if (mcLastG !== null) {
+      const tag = mcLastG > 0 ? 'WIN' : mcLastG < 0 ? 'LOSS' : 'DRAW';
+      UI.logLine(document.getElementById('mc-log'),
+        `episode ${mc.episodes}  ·  ${tag}  ·  V(empty) = ${mc.getV(TTT.initial()).toFixed(4)}`);
+    }
+
+    // TD: stepsPerTick episodes per tick too (they're cheap)
+    for (let i = 0; i < stepsPerTick; i++) td.stepOnce();
+    UI.logLine(document.getElementById('td-log'),
+      `episode ${td.episodes}  ·  V(empty) = ${td.getV(TTT.initial()).toFixed(4)}  ·  |δ| = ${(td.tdErrorCount ? td.tdErrorSum / td.tdErrorCount : 0).toFixed(4)}`);
+
+    updateDP();
+    updateMC();
+    updateTD();
+
+    // Stop conditions: stop when everyone is well converged or DP finished + many MC/TD episodes
+    if (dp.converged && mc.episodes >= 50000 && td.episodes >= 10000) {
+      stop();
+      document.getElementById('overall-status').textContent = 'all converged';
+    }
+  }
+
+  function start() {
+    if (running) return;
+    running = true;
+    document.getElementById('play').disabled = true;
+    document.getElementById('pause').disabled = false;
+    document.getElementById('overall-status').textContent = 'running';
+    const loop = () => {
+      if (!running) return;
+      tick();
+      tickHandle = setTimeout(() => requestAnimationFrame(loop), 0);
+    };
+    requestAnimationFrame(loop);
+  }
+
+  function stop() {
+    running = false;
+    if (tickHandle) { clearTimeout(tickHandle); tickHandle = null; }
+    document.getElementById('play').disabled = false;
+    document.getElementById('pause').disabled = true;
+    document.getElementById('overall-status').textContent = 'paused';
+  }
+
+  function reset() {
+    stop();
+    dp = new DPAgent();
+    mc = new MCAgent();
+    td = new TDAgent();
+    chartDP.clear(); chartMC.clear(); chartTD.clear();
+    document.getElementById('dp-log').innerHTML = '';
+    document.getElementById('mc-log').innerHTML = '';
+    document.getElementById('td-log').innerHTML = '';
+    updateDP(); updateMC(); updateTD();
+    document.getElementById('overall-status').textContent = 'reset · paused';
+  }
+
+  /* ---- controls ---- */
+
+  document.getElementById('play').addEventListener('click', start);
+  document.getElementById('pause').addEventListener('click', stop);
+  document.getElementById('reset').addEventListener('click', reset);
+  document.getElementById('speed').addEventListener('input', e => {
+    stepsPerTick = +e.target.value;
+    document.getElementById('speed-label').textContent = `${stepsPerTick} steps/tick`;
+  });
+
+  /* ---- play-against-agent ---- */
+
+  let playState = TTT.initial();
+  let playAgent = 'dp';
+  let agentSide = TTT.O;       // user is X by default
+  let userSide = TTT.X;
+  let playLocked = false;
+
+  function currentAgent() {
+    if (playAgent === 'dp') return dp;
+    if (playAgent === 'mc') return mc;
+    if (playAgent === 'td') return td;
+    return null;
+  }
+
+  function showQvals(actionScores) {
+    if (!actionScores || actionScores.length === 0) {
+      document.getElementById('play-qvals').textContent = '—';
+      return;
+    }
+    const sorted = actionScores.slice().sort((a, b) => b.q - a.q);
+    const best = sorted[0].q;
+    const lines = sorted.map(({ action, q }) => {
+      const row = Math.floor(action / 3) + 1;
+      const col = (action % 3) + 1;
+      const cls = q === best ? 'best' : 'q';
+      return `<div><span class="move">cell ${action} (r${row},c${col})</span><span class="${cls}">V = ${q.toFixed(3)}</span></div>`;
+    });
+    document.getElementById('play-qvals').innerHTML = lines.join('');
+  }
+
+  function renderPlayBoard() {
+    const root = document.getElementById('play-board');
+    root.innerHTML = '';
+    for (let i = 0; i < 9; i++) {
+      const v = playState[i];
+      const d = document.createElement('div');
+      if (v === TTT.X) { d.textContent = 'X'; d.classList.add('x', 'locked'); }
+      else if (v === TTT.O) { d.textContent = 'O'; d.classList.add('o', 'locked'); }
+      else {
+        d.textContent = '';
+        if (!playLocked) {
+          d.classList.add('empty');
+          d.addEventListener('click', () => userMove(i));
+        } else {
+          d.classList.add('locked');
+        }
+      }
+      root.appendChild(d);
+    }
+  }
+
+  function userMove(action) {
+    if (TTT.isTerminal(playState)) return;
+    // is it user's turn?
+    const expectingUser = (TTT.xToMove(playState) ? TTT.X : TTT.O) === userSide;
+    if (!expectingUser) return;
+    if (playState[action] !== TTT.EMPTY) return;
+    playState = TTT.step(playState, action, userSide);
+    renderPlayBoard();
+    if (checkPlayDone()) return;
+    setTimeout(agentMove, 250);
+  }
+
+  function agentMove() {
+    if (TTT.isTerminal(playState)) { checkPlayDone(); return; }
+    const expectingAgent = (TTT.xToMove(playState) ? TTT.X : TTT.O) === agentSide;
+    if (!expectingAgent) return;
+
+    let action = null;
+    let scores = null;
+    const agent = currentAgent();
+
+    if (playAgent === 'random' || !agent) {
+      const legal = TTT.legal(playState);
+      action = legal[Math.floor(Math.random() * legal.length)];
+      scores = legal.map(a => ({ action: a, q: 0 }));
+    } else {
+      // Agent plays from its perspective. If agent is O, we flip the board so O looks like X to it.
+      let viewState = playState;
+      if (agentSide === TTT.O) {
+        viewState = playState.map(v => -v);   // swap perspectives
+      }
+      scores = agent.actionScores(viewState);
+      const best = scores.reduce((a, b) => (b.q > a.q ? b : a), { action: 0, q: -Infinity });
+      action = best.action;
+    }
+
+    showQvals(scores);
+    playState = TTT.step(playState, action, agentSide);
+    renderPlayBoard();
+    checkPlayDone();
+  }
+
+  function checkPlayDone() {
+    if (TTT.isTerminal(playState)) {
+      playLocked = true;
+      const w = TTT.winner(playState);
+      let msg;
+      if (w === userSide) msg = 'You win! 🎉';
+      else if (w === agentSide) msg = `The ${playAgent.toUpperCase()} agent wins.`;
+      else msg = 'Draw.';
+      document.getElementById('play-status').textContent = msg;
+      renderPlayBoard();
+      return true;
+    }
+    const turn = TTT.xToMove(playState) ? TTT.X : TTT.O;
+    document.getElementById('play-status').textContent =
+      turn === userSide ? 'Your move.' : 'Agent thinking...';
+    return false;
+  }
+
+  function newGame(agentFirst = false) {
+    playState = TTT.initial();
+    playLocked = false;
+    if (agentFirst) {
+      userSide = TTT.O;
+      agentSide = TTT.X;
+    } else {
+      userSide = TTT.X;
+      agentSide = TTT.O;
+    }
+    document.getElementById('play-qvals').textContent = '—';
+    renderPlayBoard();
+    if (agentFirst) {
+      document.getElementById('play-status').textContent = 'Agent thinking...';
+      setTimeout(agentMove, 250);
+    } else {
+      document.getElementById('play-status').textContent = 'Your move (you are X).';
+    }
+  }
+
+  document.getElementById('opponent').addEventListener('change', e => {
+    playAgent = e.target.value;
+    newGame(false);
+  });
+  document.getElementById('new-game').addEventListener('click', () => newGame(false));
+  document.getElementById('swap-side').addEventListener('click', () => newGame(true));
+
+  /* ---- init ---- */
+
+  updateDP(); updateMC(); updateTD();
+  renderPlayBoard();
+  document.getElementById('play-status').textContent = 'Press "New game" — but training first gives the agent something to use.';
+})();
+</script>
+</body>
+</html>
